@@ -1,4 +1,4 @@
-# The Last-Level Branch Predictor Simulator
+# 最后一级分支预测器模拟器
 
 <p align="left">
     <a href="https://github.com/dhschall/LLBP/blob/main/LICENSE">
@@ -15,21 +15,27 @@
 </p>
 
 
-The Last-Level Branch Predictor (LLBP) is a microarchitectural approach that improves branch prediction accuracy through additional high-capacity storage backing the baseline TAGE predictor. The key insight is that LLBP breaks branch predictor state into multiple program contexts which can be thought of as a call chain. Each context comprises only a small number of patterns and can be prefetched ahead of time. This enables LLBP to store a large number of patterns in a high-capacity structure and prefetch only the patterns for the upcoming contexts into a small, fast structure to overcome the long access latency of the high-capacity structure (LLBP).
+
+最后一级分支预测器 (LLBP) 是一种微架构方法，通过支持基线 TAGE 预测器的额外高容量存储来提高分支预测准确性。关键见解是 LLBP 将分支预测器状态分解为多个程序上下文，这些上下文可以被视为一个调用链。每个上下文仅包含少量模式，并且可以提前预取。这使得 LLBP 能够将大量模式存储在高容量结构中，并仅将即将到来的上下文的模式预取到一个小的、快速的结构中，以克服高容量结构的长访问延迟。
 
 LLBP is presented at [MICRO 2024](https://microarch.org/micro57/).
 
-This repository contains the source code of the branch predictor model used to evaluate LLBP's prediction accuracy. The code is based on the [CBP5 framework](http://www.jilp.org/cbp2016/), but was heavily modified and extended with various statistics to evaluate the performance of LLBP and the baseline TAGE predictor.
 
-The aim of this framework is to provide a fast way to evaluate different branch predictor configurations and explore the design space of LLBP. It does *not* model the full CPU pipeline but only the branch predictor.
-The framework supports a timing approximation by clocking the predictor for every taken branch and/or more than 8 executed instructions between branches. While we found that this approximation is reasonable accurate to get understand the impact of late prefetches, it is only a rough estimation. For the exact timing the predictor needs to be integrated with a full CPU simulator like ChampSim or gem5.
-> We are currently working on integrating LLBP with gem5 and will release the code once it is ready.
+此存储库包含用于评估 LLBP 预测准确性的分支预测器模型的源代码。该代码基于 [CBP5 框架](http://www.jilp.org/cbp2016/)，但经过大量修改和扩展，添加了各种统计数据，以评估 LLBP 和基线 TAGE 预测器的性能。
+
+
+该框架的目的是提供一种快速方法来评估不同的分支预测器配置并探索 LLBP 的设计空间。它**不模拟整个 CPU 管道**，而只模拟分支预测器。
+
+该框架支持通过为每个执行的分支和/或分支之间执行的 8 条以上指令对预测器进行计时来估计时间。虽然我们发现这种近似值对于了解后期预取的影响是相当准确的，但这只是一个粗略的估计。要获得准确的时间，预测器需要与完整的 CPU 模拟器（如 ChampSim 或 gem5）集成。
+
+
+> 我们目前正在致力于将 LLBP 与 gem5 进行整合，一旦准备就绪，我们就会发布代码
 
 
 
 ## Prerequisites
 
-The infrastructure and following commands have been tested with the following system configuration:
+基础架构和以下命令已通过以下系统配置进行了测试:
 
 * Ubuntu 22.04.2 LTS
 * gcc 11.4.0
@@ -65,6 +71,7 @@ cmake --build ./build -j 8
 
 ## Server traces
 
+
 The traces use to evaluate LLBP collected by running the server applications on gem5 in full-system mode. The OS of the disk image is Ubuntu 20.04 and the kernel version is 5.4.84. The traces are in the [ChampSim](https://github.com/ChampSim/ChampSim) format and contains both user and kernel space instructions. The traces are available on Zenodo at [10.5281/zenodo.13133242](https://doi.org/10.5281/zenodo.13133242).
 
 The `download_traces.sh` script in the utils folder will download all traces from Zenodo and stores them into the `traces` directory.:
@@ -76,50 +83,56 @@ The `download_traces.sh` script in the utils folder will download all traces fro
 
 ## Run the simulator
 
-The simulator can be run with the following command and takes as inputs the trace file, the branch predictor model, the number of warmup instructions, and the number of simulation instructions.
-The branch predictor model can be either `tage64kscl`, `tage512kscl`, `llbp` or `llbp-timing`.
-> The definition of the branch predictor models can be found in the `bpmodels/base_predictor.cc` file.
+可以使用以下命令运行模拟器，并将跟踪文件、分支预测器模型、预热指令数量和模拟指令数量作为输入。
+
+分支预测器模型可以是 `tage64kscl`, `tage512kscl`, `llbp` 或 `llbp-timing`.
+> 分支预测器模型的定义在 `bpmodels/base_predictor.cc`
 
 ```bash
 ./build/predictor --model <predictor> -w <warmup instructions> -n <simulation instructions> <trace>
 ```
 
-For convenience, the simulator contains a script to run the experiments on all evaluated benchmarks for a given branch predictor model (`./eval_benchmarks.sh <predictor>`).
-The results in form of a stats file are stored in the `results` directory. Note, the simulator will print out some intermediate results after every 5M instructions which is useful to monitor the progress of the simulation.
+为了方便起见，模拟器包含一个脚本，用于针对给定分支预测器模型的所有评估基准运行实验 (`./eval_benchmarks.sh <predictor>`).
+
+结果以统计文件的形式存储在 `results` 目录中。请注意，模拟器每执行 5M 条指令后就会打印出一些中间结果，这有助于监控模拟的进度。
 
 
 ## Plot results
 
-The Jupyter notebook (`./analysis/mpki.ipynb`) can be used to parse the statistics file and plot the branch MPKI for different branch predictor models.
 
-To reproduce a similar graph as in the paper (Figure 9), we provide a separate script (`./eval_all.sh`) that runs the experiments for all evaluated branch predictor models and benchmarks.
+Jupyter 笔记本 (`./analysis/mpki.ipynb`) 可用于解析统计文件并绘制不同分支预测模型的分支 MPKI。
 
-> *Note:* As we integrated the LLBP with ChampSim for the paper, the results might slightly differ from the presented numbers in the paper.
+Mispredictions Per Kilo-Instructions 是一个用于衡量处理器分支预测器性能的指标。它表示每执行 1000 条指令时发生的分支预测错误次数。在现代处理器中，分支预测用于预测代码执行中的条件分支，以保持流水线的连续性。如果预测错误，处理器需要清除错误路径中的指令并重新获取正确路径，这会导致性能下降。
 
-The script can be run as follows:
+为了重现与论文中类似的图表（图 9），我们提供了一个单独的脚本 (`./eval_all.sh`)，该脚本针对所有评估的分支预测模型和基准运行实验。
+
+
+> *Note:* 由于我们在论文中将 LLBP 与 ChampSim 结合起来，因此结果可能与论文中呈现的数字略有不同。
+
+该脚本可以按如下方式运行:
 
 ```bash
 ./eval_all.sh
 ```
-Once the runs complete open they Jupyter notebook and hit run all cells.
+运行完成后，打开 Jupyter 笔记本并点击运行所有单元格。
 
 
 
 ## Code Walkthrough
 
 **Misc:**
-* The `main.cc` file contains the main entry point of the simulator. It reads the trace file, initializes the branch predictor model, and runs the simulation.
-* The `bpmodel` directory contains the implementation of the TAGE-SC-L and LLBP branch predictor models.
+*  `main.cc` 文件包含模拟器的主入口点。它读取跟踪文件，初始化分支预测器模型，并运行模拟。
+*  `bpmodel` 目录包含 TAGE-SC-L 和 LLBP 分支预测器模型的实现。
 
 **TAGE:**
-* TAGE-SC-L is split into TAGE and SC-L components. The code is taken from the CBP5 framework and modified to include additional statistics to evaluate the branch predictor.
-* The only difference of the 512KiB TAGE-SC-L are 8x more entries in the TAGE predictor.
+* TAGE-SC-L 分为 TAGE 和 SC-L 两个部分。代码取自 CBP5 框架，并经过修改，添加了额外的统计数据以评估分支预测器。
+* 512KiB TAGE-SC-L 的唯一区别是 TAGE 预测器中的条目多了 8 倍。
 
 **LLBP:**
-* LLBP derives from the TAGE-SC-L base class and overrides several of the methods to implement the LLBP functionality.
-* There are two versions of LLBP: `llbp` and `llbp-timing`. Both are functionally the same but the later models prefetching of pattern sets and can be used to study the impact of late prefetches.
-* The high-capacity LLBP is called `LLBPStorage` and stores all pattern sets. The `PatternBuffer` is the small, fast structure that stores the patterns for the upcoming contexts.
-* The `RCR` class implements all the functionality to compute program context.
+* LLBP 源自 TAGE-SC-L 基类，并重写了几种方法来实现 LLBP 功能。
+* LLBP 有两个版本：`llbp` 和 `llbp-timing`。两者功能相同，但后者对模式集的预取进行建模，可用于研究后期预取的影响。
+* 高容量 LLBP 称为`LLBPStorage`，用于存储所有模式集。`PatternBuffer`是一种小型、快速的结构，用于存储即将到来的上下文的模式。
+* `RCR` 类实现了计算程序上下文的所有功能。
 
 
 ## Citation
